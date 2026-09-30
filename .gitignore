@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.env
+.env.*
+*.csv
+*.json
+*.docx
+*.tiff
+*.png
+*.pdf
+*.svg
