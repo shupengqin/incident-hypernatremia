@@ -249,11 +249,11 @@ def draw_dca(ax, y, p_model, p_sodium):
     ax.plot(ts, treat_all, color="#b0b0b0", lw=0.8, label="Classify all")
     ax.plot(ts, np.zeros_like(ts), color="#888888", lw=0.7, ls="--", label="Classify none")
     ax.plot(ts, [net_benefit(y, p_model, t) for t in ts], color=NAVY, lw=1.3, label="XGBoost")
-    ax.plot(ts, [net_benefit(y, p_sodium, t) for t in ts], color=GRAY, lw=1.2, label="Maximum sodium")
+    ax.plot(ts, [net_benefit(y, p_sodium, t) for t in ts], color=GRAY, lw=1.2, label="Last + maximum sodium")
     ax.set_xlabel("Threshold probability")
     ax.set_ylabel("Net benefit")
     ax.set_xlim(0.02, 0.20)
-    ax.legend(loc="upper right")
+    ax.legend(loc="lower left", borderaxespad=0.3)
     panel_letter(ax, "A")
     return {f"{t:.2f}": {"xgb": net_benefit(y, p_model, t), "sodium": net_benefit(y, p_sodium, t)} for t in (0.05, 0.10, 0.15)}
 
@@ -374,16 +374,38 @@ def main():
     model = xgb()
     model.fit(X_m, y_m)
     p_e = model.predict_proba(X_e)[:, 1]
-    p_s_m = oof_predict(sodium_model(), mimic[["sodium_max"]], y_m)
     sm = sodium_model()
     sm.fit(mimic[["sodium_max"]], y_m)
     p_s = sm.predict_proba(eicu[["sodium_max"]])[:, 1]
+    last_m = read_sql(
+        "mimiciv31",
+        """
+        SELECT DISTINCT ON (stay_id) stay_id, sodium AS sodium_last
+        FROM screen.chem
+        WHERE hr >= 0 AND hr < 24 AND sodium BETWEEN 100 AND 180
+        ORDER BY stay_id, hr DESC
+        """,
+    )
+    last_e = read_sql(
+        "eicu",
+        """
+        SELECT DISTINCT ON (stay_id) stay_id, val AS sodium_last
+        FROM screen.lab_core
+        WHERE analyte = 'sodium' AND hr >= 0 AND hr < 24 AND val BETWEEN 100 AND 180
+        ORDER BY stay_id, hr DESC
+        """,
+    )
+    mimic = mimic.merge(last_m, on="stay_id", how="left")
+    eicu = eicu.merge(last_e, on="stay_id", how="left")
+    both = sodium_model()
+    both.fit(mimic[["sodium_max", "sodium_last"]], y_m)
+    p_both = both.predict_proba(eicu[["sodium_max", "sodium_last"]])[:, 1]
     from sklearn.metrics import roc_auc_score
-    print("auc", roc_auc_score(y_m, p_m), roc_auc_score(y_e, p_e), roc_auc_score(y_e, p_s), flush=True)
+    print("auc", roc_auc_score(y_m, p_m), roc_auc_score(y_e, p_e), roc_auc_score(y_e, p_s), roc_auc_score(y_e, p_both), flush=True)
     q1, q2 = np.quantile(p_m, [1 / 3, 2 / 3])
     print("cuts", q1, q2, flush=True)
     figure1(y_m, p_m, y_e, p_e, p_s)
-    figure2(y_e, p_e, p_s, model, X_m)
+    figure2(y_e, p_e, p_both, model, X_m)
     print("saved", flush=True)
 
 
