@@ -405,7 +405,7 @@ def main():
     q1, q2 = np.quantile(p_m, [1 / 3, 2 / 3])
     print("cuts", q1, q2, flush=True)
     figure1(y_m, p_m, y_e, p_e, p_s)
-    figure2(y_e, p_e, p_both, model, X_m)
+    print("figure 2 is drawn by draw_figure2_round4.py", flush=True)
     print("saved", flush=True)
 
 
