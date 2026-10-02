@@ -61,9 +61,9 @@ def main():
     ax.scatter(a150, y - 0.12, color=AMBER, s=18, label="Sodium ≥150", zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels(names)
-    ax.set_xlabel("External AUROC, same predictors")
-    ax.set_xlim(0.76, 0.86)
-    ax.legend(loc="upper left")
+    ax.set_xlabel("External AUROC")
+    ax.set_xlim(0.76, 0.88)
+    ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0)
     letter(ax, "B")
 
     ax = axes[1, 0]
