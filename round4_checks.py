@@ -149,6 +149,17 @@ def main():
     locked = xgb_det(42)
     locked.fit(mimic[FULL], ytr)
     p_lock = locked.predict_proba(eicu[FULL])[:, 1]
+    model_dir = OUT / "saved_models"
+    model_dir.mkdir(exist_ok=True)
+    import joblib
+    joblib.dump(
+        {"model": locked, "features": FULL, "seed": 42, "n_jobs": 1, "label": "y sodium>=146 at 24-72h"},
+        model_dir / "xgb_full_deterministic_seed42.joblib",
+    )
+    pd.DataFrame({
+        "stay_id": eicu.stay_id, "p_deterministic_xgb": p_lock,
+        "y146": yte, "y150": eicu.y150.to_numpy(), "y155": eicu.y155.to_numpy(),
+    }).to_csv(model_dir / "eicu_predictions_deterministic_xgb.csv", index=False)
     locked_block = {
         "urine_note": {k: (float(v) if isinstance(v, (float, np.floating)) else v) for k, v in urine_note.items()} if isinstance(urine_note, dict) else str(urine_note),
         "n_external": int(len(eicu)),
@@ -256,7 +267,18 @@ def main():
         name: cluster_delta(yte, abl_pred[name], base, te.hospitalid, 1000)
         for name in ("update_sodium_only", "update_other_only", "update_all")
     }
+    deltas["all_minus_sodium_only"] = cluster_delta(
+        yte, abl_pred["update_all"], abl_pred["update_sodium_only"], te.hospitalid, 1000
+    )
     had = te.n_24_36.fillna(0).to_numpy() > 0
+    subgroups = {}
+    for flag, mask in (("new_sodium_24_36", had), ("no_new_sodium_24_36", ~had)):
+        yy = yte[mask]
+        subgroups[flag] = {"n": int(mask.sum()), "events": int(yy.sum())}
+        if len(np.unique(yy)) < 2:
+            continue
+        for name, p in abl_pred.items():
+            subgroups[flag][name] = cal_stats(yy, p[mask])
     events = te.y.to_numpy() == 1
     lead = te.loc[events, "t146"] - 36 if "t146" in te.columns else pd.Series(dtype=float)
     lead = pd.to_numeric(lead, errors="coerce")
@@ -267,8 +289,10 @@ def main():
         "external_n": int(len(te)),
         "external_events": int(yte.sum()),
         "fraction_new_sodium_24_36": float(had.mean()),
+        "n_new_sodium_24_36": int(had.sum()),
         "models": abl,
         "cluster_delta_vs_hour24": deltas,
+        "by_new_sodium": subgroups,
         "lead_hours_after_36_among_events": {
             "n_events_with_time": int(lead.notna().sum()),
             "median": float(lead.median()) if lead.notna().any() else None,
