@@ -9,7 +9,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
 
-from extend_five import (
+from added_endpoints import (
     LABS,
     SODIUM_COLS,
     add_los_and_death,
@@ -224,7 +224,7 @@ def main():
             "explanation": "Table 6 applies the original model, trained for any sodium >=146, to the >=150 label without refitting. Table 7 refits XGBoost to the rarer >=150 label. A higher AUROC for the locked >=146 model on the >=150 label is expected when that label is a more extreme subset of the original event, not evidence of a training error."
         },
     }
-    path = OUT / "followup_review_results.json"
+    path = OUT / "logistic_risk_groups_results.json"
     path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print("saved", path, flush=True)
 

@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
 from analysis import clean_urine, load_frames
-from extend_five import SODIUM_COLS, auc, ap, landmark_frames_fixed, net_benefit, read_sql
+from added_endpoints import SODIUM_COLS, auc, ap, landmark_frames_fixed, net_benefit, read_sql
 
 OUT = Path(r"F:\MIMIC\direction_screen\hypernatremia")
 FULL = [
@@ -311,7 +311,7 @@ def main():
         "seed_stability": seeds,
         "ablation_36_48": ablation,
     }
-    path = OUT / "round4_results.json"
+    path = OUT / "sodium_update_checks_results.json"
     path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print("saved", path, flush=True)
 

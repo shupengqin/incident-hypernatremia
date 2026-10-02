@@ -761,7 +761,7 @@ def main():
         "eicu": death_from_scores(te, oof, ext, "apache"),
     }
 
-    path = OUT / "extend_five_results.json"
+    path = OUT / "added_endpoints_results.json"
     path.write_text(json.dumps(result, indent=2, default=float), encoding="utf-8")
     print("saved", path, flush=True)
 

@@ -15,7 +15,7 @@ from xgboost import XGBClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 
-from extend_five import (
+from added_endpoints import (
     FULL,
     LABS,
     SODIUM_COLS,
@@ -239,7 +239,7 @@ def main():
 
     result = {"fair_same_variables": fair, "paired_increment": paired, "table8_wilson": table8}
     # drop nothing huge; predictions were not stored
-    path = OUT / "fair_compare_results.json"
+    path = OUT / "same_predictor_comparison_results.json"
     path.write_text(json.dumps(result, indent=2), encoding="utf-8")
     print("saved", path, flush=True)
 
