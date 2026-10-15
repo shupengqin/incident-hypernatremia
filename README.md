@@ -23,5 +23,10 @@ Run them from this directory, with `PGPASSWORD` set, after the local `screen` sc
 9. `logistic_risk_groups.py` builds the exploratory logistic risk groups.
 10. `same_predictor_comparison.py` compares XGBoost and logistic regression on the same predictors.
 11. `sodium_update_checks.py` refits the locked model on one thread and compares the 36-hour sodium update with the other laboratory updates.
+12. `two_sodium_groups.py` locks the two-sodium logistic tertiles, writes the integer lookup table, and scores sodium of at least 150 mmol/L after removing recorded hypertonic saline and mannitol.
+13. `hypertonic_sensitivity.py` counts hypertonic saline and mannitol exposure in the outcome window and rescores the two-sodium model for sodium of at least 146 mmol/L.
+14. `display_checks.py` reports why the external tertiles are unequal, the hospital observed-to-expected ratios for the two-sodium model, and the largest recalibration gap in the lookup table.
+
+`make_figures.py` draws the two-sodium calibration curve in Figure 1C and the two-sodium risk groups in Figure 1D. `draw_figure2.py` compares those groups with the XGBoost groups.
 
 Output files are written next to the scripts, under `F:\MIMIC\direction_screen\hypernatremia` in the current copies.

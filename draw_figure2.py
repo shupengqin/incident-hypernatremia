@@ -35,25 +35,25 @@ def letter(ax, s):
 
 def main():
     fig, axes = plt.subplots(2, 2, figsize=(7.4, 6.2))
-    fig.subplots_adjust(hspace=0.45, wspace=0.38)
+    fig.subplots_adjust(hspace=0.42, wspace=0.55, bottom=0.08)
 
     ax = axes[0, 0]
     labels = ["Low", "Intermediate", "High"]
     xgb = [1.2, 3.2, 15.2]
-    logit = [1.2, 3.5, 15.7]
+    sodium = [1.4, 3.9, 14.5]
     x = np.arange(3)
     w = 0.36
-    ax.bar(x - w / 2, xgb, w, color=NAVY, label="Prespecified XGBoost")
-    ax.bar(x + w / 2, logit, w, color=AMBER, label="Harmonized logistic")
+    ax.bar(x - w / 2, xgb, w, color=NAVY, label="XGBoost")
+    ax.bar(x + w / 2, sodium, w, color=GRAY, label="Two-sodium logistic")
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.set_ylabel("Observed risk in eICU, %")
+    ax.set_ylabel("Observed risk in eICU-CRD, %")
     ax.set_ylim(0, 20)
     ax.legend(loc="upper left")
     letter(ax, "A")
 
     ax = axes[0, 1]
-    names = ["XGBoost", "Logistic", "Last + maximum"]
+    names = ["XGBoost", "Harmonized\nlogistic", "Last + maximum"]
     a146 = [0.817, 0.810, 0.790]
     a150 = [0.829, 0.835, 0.799]
     y = np.arange(len(names))
@@ -61,6 +61,7 @@ def main():
     ax.scatter(a150, y - 0.12, color=AMBER, s=18, label="Sodium ≥150", zorder=3)
     ax.set_yticks(y)
     ax.set_yticklabels(names)
+    ax.invert_yaxis()
     ax.set_xlabel("External AUROC")
     ax.set_xlim(0.76, 0.88)
     ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5), borderaxespad=0)
@@ -74,7 +75,9 @@ def main():
     ax.set_xticks(np.arange(4))
     ax.set_xticklabels(labs)
     ax.set_ylabel("External AUROC")
-    ax.set_ylim(0.80, 0.90)
+    ax.set_ylim(0, 1.0)
+    for i, v in enumerate(vals):
+        ax.text(i, v + 0.015, f"{v:.3f}", ha="center", va="bottom", fontsize=6)
     letter(ax, "C")
 
     ax = axes[1, 1]
