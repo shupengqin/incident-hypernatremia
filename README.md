@@ -26,6 +26,7 @@ Run them from this directory, with `PGPASSWORD` set, after the local `screen` sc
 12. `two_sodium_groups.py` locks the two-sodium logistic tertiles, writes the integer lookup table, and scores sodium of at least 150 mmol/L after removing recorded hypertonic saline and mannitol.
 13. `hypertonic_sensitivity.py` counts hypertonic saline and mannitol exposure in the outcome window and rescores the two-sodium model for sodium of at least 146 mmol/L.
 14. `display_checks.py` reports why the external tertiles are unequal, the hospital observed-to-expected ratios for the two-sodium model, and the largest recalibration gap in the lookup table.
+15. `locked_group_endpoints.py` applies the locked two-sodium groups, without refitting, to the first sodium after 24 hours and to sodium of at least 150 mmol/L, and compares the last sodium alone with both sodium values.
 
 `make_figures.py` draws the two-sodium calibration curve in Figure 1C and the two-sodium risk groups in Figure 1D. `draw_figure2.py` compares those groups with the XGBoost groups.
 
