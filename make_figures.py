@@ -36,15 +36,15 @@ mpl.rcParams.update({
     "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
     "svg.fonttype": "none",
     "pdf.fonttype": 42,
-    "font.size": 7,
+    "font.size": 8,
     "axes.spines.right": False,
     "axes.spines.top": False,
     "axes.linewidth": 0.6,
     "legend.frameon": False,
-    "axes.labelsize": 7,
-    "xtick.labelsize": 6.5,
-    "ytick.labelsize": 6.5,
-    "legend.fontsize": 6,
+    "axes.labelsize": 8,
+    "xtick.labelsize": 7.5,
+    "ytick.labelsize": 7.5,
+    "legend.fontsize": 7,
 })
 
 
@@ -147,14 +147,14 @@ def draw_flow(ax):
             box(
                 ax, x, y - box_h, box_w, box_h, text,
                 face_end if i == len(steps) - 1 else face, edge,
-                size=6.6, weight="bold" if i in (0, len(steps) - 1) else "regular",
+                size=7.2, weight="bold" if i in (0, len(steps) - 1) else "regular",
             )
             bottoms.append(y - box_h)
             if excl:
                 mid_y = y + gap / 2
                 box(
                     ax, x + box_w + 2.4, mid_y - side_h / 2, side_w, side_h, excl,
-                    "#f7f7f7", "#8a8a8a", size=6.0, weight="regular", color="#333333",
+                    "#f7f7f7", "#8a8a8a", size=6.5, weight="regular", color="#333333",
                 )
                 ax.annotate(
                     "",
@@ -227,8 +227,8 @@ def draw_risk(ax):
     ax.bar(x - w / 2, mimic, w, color=NAVY, label="MIMIC-IV")
     ax.bar(x + w / 2, eicu, w, color=AMBER, label="eICU-CRD")
     for i, (a, b) in enumerate(zip(mimic, eicu)):
-        ax.text(i - w / 2, a + 0.004, f"{100 * a:.1f}%", ha="center", va="bottom", fontsize=5.2, color=NAVY)
-        ax.text(i + w / 2, b + 0.016, f"{100 * b:.1f}%", ha="center", va="bottom", fontsize=5.2, color=AMBER)
+        ax.text(i - w / 2, a + 0.004, f"{100 * a:.1f}%", ha="center", va="bottom", fontsize=6.5, color=NAVY)
+        ax.text(i + w / 2, b + 0.018, f"{100 * b:.1f}%", ha="center", va="bottom", fontsize=6.5, color=AMBER)
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
     ax.set_ylabel("Observed sodium ≥146")
@@ -239,7 +239,7 @@ def draw_risk(ax):
 
 
 def figure1(y_m, p_m, y_e, p_e, p_s):
-    fig = plt.figure(figsize=(7.4, 6.5))
+    fig = plt.figure(figsize=(7.8, 6.9))
     gs = fig.add_gridspec(2, 3, height_ratios=[0.92, 1.0], hspace=0.16, wspace=0.40)
     ax_a = fig.add_subplot(gs[0, :])
     ax_b = fig.add_subplot(gs[1, 0])

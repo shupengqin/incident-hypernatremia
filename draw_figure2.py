@@ -17,15 +17,15 @@ mpl.rcParams.update({
     "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "sans-serif"],
     "svg.fonttype": "none",
     "pdf.fonttype": 42,
-    "font.size": 7,
+    "font.size": 8,
     "axes.spines.right": False,
     "axes.spines.top": False,
     "axes.linewidth": 0.6,
     "legend.frameon": False,
-    "axes.labelsize": 7,
-    "xtick.labelsize": 6.5,
-    "ytick.labelsize": 6.5,
-    "legend.fontsize": 6,
+    "axes.labelsize": 8,
+    "xtick.labelsize": 7.5,
+    "ytick.labelsize": 7.5,
+    "legend.fontsize": 7,
 })
 
 
@@ -34,8 +34,8 @@ def letter(ax, s):
 
 
 def main():
-    fig, axes = plt.subplots(2, 2, figsize=(7.4, 6.2))
-    fig.subplots_adjust(hspace=0.42, wspace=0.55, bottom=0.08)
+    fig, axes = plt.subplots(2, 2, figsize=(7.8, 6.5))
+    fig.subplots_adjust(hspace=0.48, wspace=0.72, bottom=0.10, right=0.78)
 
     ax = axes[0, 0]
     labels = ["Low", "Intermediate", "High"]
@@ -77,7 +77,7 @@ def main():
     ax.set_ylabel("External AUROC")
     ax.set_ylim(0, 1.0)
     for i, v in enumerate(vals):
-        ax.text(i, v + 0.015, f"{v:.3f}", ha="center", va="bottom", fontsize=6)
+        ax.text(i, v + 0.02, f"{v:.3f}", ha="center", va="bottom", fontsize=7)
     letter(ax, "C")
 
     ax = axes[1, 1]
