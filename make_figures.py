@@ -118,57 +118,59 @@ def box(ax, x, y, w, h, text, face, edge, size=6.2, weight="regular", color="#1a
     ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=size, fontweight=weight, color=color, linespacing=1.15)
 
 
-def draw_flow(ax):
+def draw_flow(ax, show_letter=False):
     ax.set_xlim(0, 100)
-    ax.set_ylim(8, 100)
+    ax.set_ylim(0, 100)
     ax.axis("off")
-    panel_letter(ax, "A", x=-0.01, y=1.02)
+    if show_letter:
+        panel_letter(ax, "A", x=-0.01, y=1.02)
     specs = [
-        ("MIMIC-IV", 1.2, NAVY, "#e8f0f8", "#d9e6f2", [
+        ("MIMIC-IV", 2.0, NAVY, "#e8f0f8", "#d9e6f2", [
             ("Adults, first ICU stay\nn = 85,242", None),
             ("Sodium measured, 0–24 h\nn = 82,588", "No sodium, 0–24 h\nn = 2,654"),
             ("Sodium 135–145 mmol/L\nfor the first 24 h\nn = 59,008", "Sodium <135 or >145\nn = 23,580"),
             ("Analysis cohort\nn = 53,712\nSodium ≥146 mmol/L\nn = 3,371 (6.3%)", "No sodium, 24–72 h\nn = 5,296"),
         ]),
-        ("eICU-CRD", 51.2, AMBER, "#f8efe4", "#f3e0cc", [
+        ("eICU-CRD", 52.0, AMBER, "#f8efe4", "#f3e0cc", [
             ("Adults, first ICU stay\nn = 157,883", None),
             ("Sodium measured, 0–24 h\nn = 136,582", "No sodium, 0–24 h\nn = 21,301"),
             ("Sodium 135–145 mmol/L\nfor the first 24 h\nn = 99,571", "Sodium <135 or >145\nn = 37,011"),
             ("Analysis cohort\nn = 73,308\nSodium ≥146 mmol/L\nn = 4,908 (6.7%)", "No sodium, 24–72 h\nn = 26,263"),
         ]),
     ]
-    box_w, box_h, gap = 28.0, 15.2, 6.2
-    side_w, side_h = 16.8, 10.6
+    box_w, box_h, gap = 30.0, 18.0, 4.2
+    side_w, side_h = 16.2, 11.4
     for title, x, edge, face, face_end, steps in specs:
-        ax.text(x + box_w / 2, 98.5, title, ha="center", va="top", fontsize=8, fontweight="bold", color="#1a1a1a")
-        y = 90.0
+        ax.text(x + box_w / 2, 98.2, title, ha="center", va="top", fontsize=9, fontweight="bold", color="#1a1a1a")
+        y = 93.5
         bottoms = []
         for i, (text, excl) in enumerate(steps):
+            height = box_h + (2.2 if i == len(steps) - 1 else 0)
             box(
-                ax, x, y - box_h, box_w, box_h, text,
+                ax, x, y - height, box_w, height, text,
                 face_end if i == len(steps) - 1 else face, edge,
-                size=7.2, weight="bold" if i in (0, len(steps) - 1) else "regular",
+                size=7.4, weight="bold" if i in (0, len(steps) - 1) else "regular",
             )
-            bottoms.append(y - box_h)
+            bottoms.append(y - height)
             if excl:
-                mid_y = y + gap / 2
+                mid_y = y - height / 2
                 box(
-                    ax, x + box_w + 2.4, mid_y - side_h / 2, side_w, side_h, excl,
-                    "#f7f7f7", "#8a8a8a", size=6.5, weight="regular", color="#333333",
+                    ax, x + box_w + 1.6, mid_y - side_h / 2, side_w, side_h, excl,
+                    "#f7f7f7", "#8a8a8a", size=6.6, weight="regular", color="#333333",
                 )
                 ax.annotate(
                     "",
-                    xy=(x + box_w + 2.4, mid_y),
-                    xytext=(x + box_w / 2, mid_y),
-                    arrowprops=dict(arrowstyle="-|>", color="#666666", lw=0.55),
+                    xy=(x + box_w + 1.6, mid_y),
+                    xytext=(x + box_w, mid_y),
+                    arrowprops=dict(arrowstyle="-|>", color="#666666", lw=0.6),
                 )
-            y -= box_h + gap
+            y -= height + gap
         for i in range(len(steps) - 1):
             ax.annotate(
                 "",
-                xy=(x + box_w / 2, bottoms[i] - gap + 0.45),
-                xytext=(x + box_w / 2, bottoms[i] - 0.2),
-                arrowprops=dict(arrowstyle="-|>", color="#444444", lw=0.6),
+                xy=(x + box_w / 2, bottoms[i] - gap + 0.15),
+                xytext=(x + box_w / 2, bottoms[i] - 0.15),
+                arrowprops=dict(arrowstyle="-|>", color="#444444", lw=0.7),
             )
 
 
@@ -176,7 +178,7 @@ def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s):
     series = [
         (y_m, p_m, NAVY, "XGBoost, MIMIC-IV  0.824"),
         (y_e, p_e, AMBER, "XGBoost, eICU-CRD  0.807"),
-        (y_s, p_s, GRAY, "Last + maximum, eICU-CRD  0.790"),
+        (y_s, p_s, GRAY, "Two-sodium logistic, eICU-CRD  0.790"),
     ]
     for y, p, color, label in series:
         fpr, tpr, _ = roc_curve(y, p)
@@ -186,8 +188,8 @@ def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s):
     ax.set_ylabel("True positive rate")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
-    ax.legend(loc="lower right", handlelength=1.4, borderaxespad=0.2)
-    panel_letter(ax, "B")
+    ax.legend(loc="lower right", frameon=True, framealpha=0.94, handlelength=1.3, borderpad=0.35)
+    panel_letter(ax, "A")
 
 
 def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
@@ -196,7 +198,7 @@ def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
         (y_e, p_e, AMBER, "XGBoost, eICU-CRD"),
     ]
     if p_sodium is not None:
-        series.append((y_e, p_sodium, GRAY, "Two-sodium, eICU-CRD"))
+        series.append((y_e, p_sodium, GRAY, "Two-sodium logistic, eICU-CRD"))
     for y, p, color, label in series:
         order = np.argsort(p)
         y, p = y[order], p[order]
@@ -213,52 +215,60 @@ def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
     ax.set_ylim(0, 0.35)
     ax.set_xlabel("Predicted probability")
     ax.set_ylabel("Observed frequency")
-    ax.legend(loc="upper left")
-    panel_letter(ax, "C")
+    ax.legend(
+        loc="upper center", bbox_to_anchor=(0.55, -0.22),
+        frameon=False, handlelength=1.2, fontsize=6.5, borderaxespad=0,
+    )
+    panel_letter(ax, "B")
 
 
 def draw_risk(ax):
     groups = ["Low", "Intermediate", "High"]
     # Two-sodium tertiles 0.0184 and 0.0529. Development bars are out-of-fold.
-    mimic = [0.0143, 0.0322, 0.1429]
-    eicu = [0.0138, 0.0393, 0.1450]
+    mimic = [1.4, 3.2, 14.3]
+    eicu = [1.4, 3.9, 14.5]
     x = np.arange(len(groups))
-    w = 0.36
-    ax.bar(x - w / 2, mimic, w, color=NAVY, label="MIMIC-IV")
-    ax.bar(x + w / 2, eicu, w, color=AMBER, label="eICU-CRD")
+    width = 0.28
+    ax.bar(x - 0.16, mimic, width, color=NAVY, label="MIMIC-IV")
+    ax.bar(x + 0.16, eicu, width, color=AMBER, label="eICU-CRD")
     for i, (a, b) in enumerate(zip(mimic, eicu)):
-        ax.text(i - w / 2, a + 0.004, f"{100 * a:.1f}%", ha="center", va="bottom", fontsize=6.5, color=NAVY)
-        ax.text(i + w / 2, b + 0.018, f"{100 * b:.1f}%", ha="center", va="bottom", fontsize=6.5, color=AMBER)
+        ax.text(i - 0.16, a + 0.25, f"{a:.1f}", ha="right", va="bottom", fontsize=7, color=NAVY)
+        ax.text(i + 0.16, b + 0.25, f"{b:.1f}", ha="left", va="bottom", fontsize=7, color=AMBER)
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
-    ax.set_ylabel("Observed sodium ≥146")
-    ax.set_ylim(0, 0.24)
-    ax.set_title("Two-sodium logistic", fontsize=8)
+    ax.set_ylabel("Observed risk of sodium ≥146 mmol/L, %")
+    ax.set_ylim(0, 20)
     ax.legend(loc="upper left")
-    panel_letter(ax, "D")
+    panel_letter(ax, "C")
+
+
+def save_rgb(fig, stem):
+    from PIL import Image
+    png = OUT / f"{stem}.png"
+    fig.savefig(OUT / f"{stem}.svg", bbox_inches="tight")
+    fig.savefig(OUT / f"{stem}.pdf", bbox_inches="tight")
+    fig.savefig(png, dpi=600, bbox_inches="tight")
+    plt.close(fig)
+    im = Image.open(png).convert("RGB")
+    tmp = OUT / f"{stem}_rgb.tiff"
+    im.save(tmp, format="TIFF", compression="tiff_lzw", dpi=(600, 600))
+    tmp.replace(OUT / f"{stem}.tiff")
+
+
+def save_flow():
+    fig, ax = plt.subplots(figsize=(7.6, 5.2))
+    draw_flow(ax, show_letter=False)
+    save_rgb(fig, "figure1_flow")
 
 
 def figure1(y_m, p_m, y_e, p_e, p_s):
-    fig = plt.figure(figsize=(7.8, 6.9))
-    gs = fig.add_gridspec(2, 3, height_ratios=[0.92, 1.0], hspace=0.16, wspace=0.40)
-    ax_a = fig.add_subplot(gs[0, :])
-    ax_b = fig.add_subplot(gs[1, 0])
-    ax_c = fig.add_subplot(gs[1, 1])
-    ax_d = fig.add_subplot(gs[1, 2])
-    draw_flow(ax_a)
-    draw_roc(ax_b, y_m, p_m, y_e, p_e, y_e, p_s)
-    draw_calibration(ax_c, y_m, p_m, y_e, p_e, p_s)
-    draw_risk(ax_d)
-    fig.savefig(OUT / "figure1_abcd.svg", bbox_inches="tight")
-    fig.savefig(OUT / "figure1_abcd.pdf", bbox_inches="tight")
-    png = OUT / "figure1_abcd.png"
-    fig.savefig(png, dpi=600, bbox_inches="tight")
-    plt.close(fig)
-    from PIL import Image
-    im = Image.open(png).convert("RGB")
-    tmp = OUT / "figure1_abcd_rgb.tiff"
-    im.save(tmp, format="TIFF", compression="tiff_lzw", dpi=(600, 600))
-    tmp.replace(OUT / "figure1_abcd.tiff")
+    save_flow()
+    fig, axes = plt.subplots(1, 3, figsize=(7.8, 3.8))
+    fig.subplots_adjust(wspace=0.55, bottom=0.28, right=0.98)
+    draw_roc(axes[0], y_m, p_m, y_e, p_e, y_e, p_s)
+    draw_calibration(axes[1], y_m, p_m, y_e, p_e, p_s)
+    draw_risk(axes[2])
+    save_rgb(fig, "figure2_performance")
 
 
 def draw_dca(ax, y, p_model, p_sodium, show_letter=True):

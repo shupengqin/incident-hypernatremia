@@ -227,7 +227,7 @@ def figure3(y_m, p_m, y_e, p_e, threshold):
         ax.set_xlabel("Predicted-probability threshold")
         ax.set_ylabel("Rate")
         ax.set_title(title, fontsize=8)
-        ax.legend(loc="best", fontsize=6)
+        ax.legend(loc="center right", fontsize=6.5)
     panel_letter(ax1, "A")
     panel_letter(ax2, "B")
 
@@ -238,28 +238,31 @@ def figure3(y_m, p_m, y_e, p_e, threshold):
     x = np.arange(len(metrics))
     w = 0.36
     ax3.bar(x - w / 2, [m_op[k] for k in keys], w, color=NAVY, label="MIMIC-IV")
-    ax3.bar(x + w / 2, [e_op[k] for k in keys], w, color=AMBER, label="eICU")
+    ax3.bar(x + w / 2, [e_op[k] for k in keys], w, color=AMBER, label="eICU-CRD")
     ax3.set_xticks(x)
     ax3.set_xticklabels(metrics)
-    ax3.set_ylim(0, 1.05)
+    ax3.set_ylim(0, 1.08)
     ax3.set_ylabel("Proportion")
-    ax3.legend(loc="center", bbox_to_anchor=(0.68, 0.55), frameon=False, fontsize=6)
+    ax3.legend(loc="upper center", bbox_to_anchor=(0.38, 0.98), frameon=False, fontsize=7)
     panel_letter(ax3, "C")
 
     bins = np.linspace(0, 0.6, 31)
     ax4.hist(p_e[y_e == 0], bins=bins, density=True, histtype="step", lw=1.2, color=GRAY, label="No event")
     ax4.hist(p_e[y_e == 1], bins=bins, density=True, histtype="step", lw=1.2, color=NAVY, label="Sodium ≥146")
-    ax4.axvline(threshold, color=AMBER, lw=0.8, ls="--")
-    ax4.set_xlabel("Predicted probability, eICU")
+    ax4.axvline(threshold, color=GRAY, lw=0.8, ls="--")
+    ax4.set_xlabel("Predicted probability, eICU-CRD")
     ax4.set_ylabel("Density")
     ax4.legend(loc="upper right")
     panel_letter(ax4, "D")
 
-    fig.savefig(OUT / "figure3_abcd.svg", bbox_inches="tight")
-    fig.savefig(OUT / "figure3_abcd.pdf", bbox_inches="tight")
-    fig.savefig(OUT / "figure3_abcd.tiff", dpi=600, bbox_inches="tight")
-    fig.savefig(OUT / "figure3_abcd.png", dpi=600, bbox_inches="tight")
+    png = OUT / "figure3_abcd.png"
+    fig.savefig(png, dpi=600, bbox_inches="tight")
     plt.close(fig)
+    from PIL import Image
+    im = Image.open(png).convert("RGB")
+    tmp = OUT / "figure3_abcd_rgb.tiff"
+    im.save(tmp, format="TIFF", compression="tiff_lzw", dpi=(600, 600))
+    tmp.replace(OUT / "figure3_abcd.tiff")
 
 
 def main():
