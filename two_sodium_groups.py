@@ -68,12 +68,20 @@ def boot_ci(y, p, fn, n=1000, seed=42):
     return float(np.quantile(vals, 0.025)), float(np.quantile(vals, 0.975))
 
 
-def calib(y, p):
+def joint_calib(y, p):
+    """Unpenalized calibration. Intercept is estimated with the slope fixed at 1.
+    The slope, and its accompanying intercept, come from a separate joint fit.
+    """
+    import statsmodels.api as sm
     logit = np.log(np.clip(p, 1e-6, 1 - 1e-6) / (1 - np.clip(p, 1e-6, 1 - 1e-6)))
-    # slope and intercept
-    lr = LogisticRegression(max_iter=500)
-    lr.fit(logit.reshape(-1, 1), y)
-    slope = float(lr.coef_[0, 0])
+    citl = sm.GLM(y, np.ones((len(y), 1)), family=sm.families.Binomial(), offset=logit).fit()
+    joint = sm.GLM(y, sm.add_constant(logit), family=sm.families.Binomial()).fit()
+    return float(citl.params[0]), float(joint.params[1]), float(joint.params[0])
+
+
+def calib(y, p):
+    intercept, slope, _joint_intercept = joint_calib(y, p)
+    return intercept, slope
     # intercept with slope fixed at 1: fit intercept only via offset
     lr1 = LogisticRegression(fit_intercept=True, max_iter=500)
     # sklearn doesn't support offset; use GLM-style via one column of ones and penalty none on a fixed slope by regressing y on logit with intercept in stats
@@ -214,10 +222,20 @@ print("mimic oof op", op(mimic.y146.astype(int).to_numpy(), oof_p, thr))
 # y150 model, full and excluded
 m150 = pipe()
 m150.fit(mimic[["sodium_max", "sodium_last"]], mimic.y150.astype(int))
+y150_calib = None
 for label, mask in (("full", np.ones(len(eicu), dtype=bool)), ("drop", ~eicu.exposed.to_numpy())):
     yy = eicu.y150.astype(int).to_numpy()[mask]
     pp = m150.predict_proba(eicu.loc[mask, ["sodium_max", "sodium_last"]])[:, 1]
     print(label, "y150 auc", round(roc_auc_score(yy, pp), 3), "n", int(mask.sum()), "events", int(yy.sum()))
+    if label == "full":
+        citl, slope150, joint_a = joint_calib(yy, pp)
+        y150_calib = {
+            "auroc": round(float(roc_auc_score(yy, pp)), 3),
+            "intercept_slope_fixed": round(citl, 3),
+            "slope": round(slope150, 3),
+            "joint_intercept": round(joint_a, 3),
+        }
+        print("y150 intercept slope-fixed", y150_calib["intercept_slope_fixed"], "slope", y150_calib["slope"], "joint intercept", y150_calib["joint_intercept"])
 
 # lookup
 grid = []
@@ -253,6 +271,7 @@ result = {
     "threshold": round(thr, 4),
     "calib_intercept": round(icept, 3),
     "calib_slope": round(slope, 3),
+    "y150_calibration": y150_calib,
 }
 (OUT / "two_sodium_groups.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
 print("wrote json")
