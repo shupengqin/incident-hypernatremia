@@ -188,7 +188,7 @@ def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s):
     ax.set_ylabel("True positive rate")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
-    ax.legend(loc="lower right", frameon=True, framealpha=0.94, handlelength=1.3, borderpad=0.35)
+    ax.legend(loc="lower right", frameon=True, framealpha=0.94, handlelength=1.2, borderpad=0.3)
     panel_letter(ax, "A")
 
 

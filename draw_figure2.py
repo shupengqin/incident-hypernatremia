@@ -53,7 +53,7 @@ def main():
     letter(ax, "A")
 
     ax = axes[0, 1]
-    names = ["XGBoost\n(harmonized)", "Harmonized\nlogistic", "Two-sodium\nlogistic"]
+    names = ["Harmonized\nXGBoost", "Harmonized\nlogistic", "Two-sodium\nlogistic"]
     # External AUROC and patient-level 95% intervals. Filled after figure_panel_cis.py.
     a146 = np.array([0.817, 0.810, 0.790])
     a150 = np.array([0.829, 0.835, 0.799])
