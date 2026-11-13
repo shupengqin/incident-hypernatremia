@@ -128,13 +128,13 @@ def draw_flow(ax, show_letter=False):
         ("MIMIC-IV", 2.0, NAVY, "#e8f0f8", "#d9e6f2", [
             ("Adults, first ICU stay\nn = 85,242", None),
             ("Sodium measured, 0–24 h\nn = 82,588", "No sodium, 0–24 h\nn = 2,654"),
-            ("Sodium 135–145 mmol/L\nfor the first 24 h\nn = 59,008", "Sodium <135 or >145\nn = 23,580"),
+            ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 59,008", "Sodium <135 or >145\nn = 23,580"),
             ("Analysis cohort\nn = 53,712\nSodium ≥146 mmol/L\nn = 3,371 (6.3%)", "No sodium, 24–72 h\nn = 5,296"),
         ]),
         ("eICU-CRD", 52.0, AMBER, "#f8efe4", "#f3e0cc", [
             ("Adults, first ICU stay\nn = 157,883", None),
             ("Sodium measured, 0–24 h\nn = 136,582", "No sodium, 0–24 h\nn = 21,301"),
-            ("Sodium 135–145 mmol/L\nfor the first 24 h\nn = 99,571", "Sodium <135 or >145\nn = 37,011"),
+            ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 99,571", "Sodium <135 or >145\nn = 37,011"),
             ("Analysis cohort\nn = 73,308\nSodium ≥146 mmol/L\nn = 4,908 (6.7%)", "No sodium, 24–72 h\nn = 26,263"),
         ]),
     ]
@@ -145,7 +145,7 @@ def draw_flow(ax, show_letter=False):
         y = 93.5
         bottoms = []
         for i, (text, excl) in enumerate(steps):
-            height = box_h + (2.2 if i == len(steps) - 1 else 0)
+            height = box_h + (2.4 if text.count("\n") >= 3 else 0)
             box(
                 ax, x, y - height, box_w, height, text,
                 face_end if i == len(steps) - 1 else face, edge,
@@ -188,7 +188,7 @@ def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s):
     ax.set_ylabel("True positive rate")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
-    ax.legend(loc="lower right", frameon=True, framealpha=0.94, handlelength=1.2, borderpad=0.3)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), frameon=False, fontsize=6.5, handlelength=1.2, ncol=1)
     panel_letter(ax, "A")
 
 
