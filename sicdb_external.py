@@ -487,6 +487,41 @@ def main():
     eicu_check = metric_block(eicu.y.to_numpy().astype(int), p_e)
     eicu_check["operating"] = classify(eicu.y.to_numpy().astype(int), p_e, x_thr)
     print("eicu check auroc", round(eicu_check["auroc"], 3), "sens", eicu_check["operating"]["sensitivity"], flush=True)
+    rng = np.random.default_rng(42)
+    idx = np.arange(len(y))
+    diffs = []
+    for _ in range(1000):
+        b = rng.choice(idx, size=len(y), replace=True)
+        if y[b].min() == y[b].max():
+            continue
+        diffs.append(roc_auc_score(y[b], p_x[b]) - roc_auc_score(y[b], p_s[b]))
+    diffs = np.asarray(diffs)
+    paired = {
+        "contrast": "XGBoost minus two-sodium",
+        "estimate": float(roc_auc_score(y, p_x) - roc_auc_score(y, p_s)),
+        "ci95": [float(np.quantile(diffs, 0.025)), float(np.quantile(diffs, 0.975))],
+        "n_boot": int(len(diffs)),
+    }
+    print("paired", paired, flush=True)
+    normal = df[(df.na_n >= 1) & (df.sodium_min >= 135) & (df.sodium_max <= 145)].copy()
+    missing_fu = normal[normal.na_fu == 0]
+    death_off = pd.read_csv(SIC / "cases.csv.gz", usecols=["CaseID", "OffsetOfDeath", "HospitalDischargeType"])
+    death_off = death_off.rename(columns={"CaseID": "stay_id"})
+    missing_fu = missing_fu.merge(death_off, on="stay_id", how="left")
+    off = pd.to_numeric(missing_fu.OffsetOfDeath, errors="coerce")
+    died = (missing_fu.HospitalDischargeType == 3130) & off.notna() & (off >= 0) & (off < H72)
+    left = (~died) & (missing_fu.icu_seconds < H72)
+    still = (~died) & (missing_fu.icu_seconds >= H72)
+    no_followup = {
+        "first_day_normal": int(len(normal)),
+        "no_later_sodium": int(len(missing_fu)),
+        "died_within_72h": int(died.sum()),
+        "left_icu_before_72h": int(left.sum()),
+        "still_in_icu": int(still.sum()),
+        "detected_146": int(y.sum()),
+        "later_sodium_below_146": int((y == 0).sum()),
+    }
+    print("no follow-up", no_followup, flush=True)
 
     result = {
         "cohort": {
@@ -509,6 +544,8 @@ def main():
         "xgboost": xgb_block,
         "harmonized_logistic": harmonized,
         "eicu_refit_check": eicu_check,
+        "paired_xgb_minus_two_sodium": paired,
+        "no_followup": no_followup,
     }
     def conv(o):
         if isinstance(o, dict):
