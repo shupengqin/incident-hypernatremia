@@ -41,7 +41,7 @@ def save_xgb_groups(sic=None):
     for label, vals, color, shift in series:
         ax.bar(x + shift, vals, w, color=color, label=label)
         for i, val in enumerate(vals):
-            ax.text(i + shift, val + 0.006, f"{100 * val:.1f}", ha="center", va="bottom", fontsize=6, color=color)
+            ax.text(i + shift, val + 0.006, f"{100 * val:.1f}%", ha="center", va="bottom", fontsize=6, color=color)
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
     ax.set_ylabel("Observed sodium ≥146")
