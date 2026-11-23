@@ -29,6 +29,7 @@ FEATURES = [
 NAVY = "#1f4e79"
 AMBER = "#b86e2a"
 GRAY = "#5c6370"
+TEAL = "#1f7a6d"
 BLUE = "#4c78a8"
 
 mpl.rcParams.update({
@@ -118,88 +119,105 @@ def box(ax, x, y, w, h, text, face, edge, size=6.2, weight="regular", color="#1a
     ax.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=size, fontweight=weight, color=color, linespacing=1.15)
 
 
+def draw_one_cohort(ax, title, x, y_top, edge, face, face_end, steps):
+    box_w, box_h, gap = 30.0, 16.5, 3.2
+    side_w, side_h = 16.2, 10.2
+    ax.text(x + box_w / 2, y_top + 3.6, title, ha="center", va="top", fontsize=9, fontweight="bold", color="#1a1a1a")
+    y = y_top
+    bottoms = []
+    for i, (text, excl) in enumerate(steps):
+        height = box_h + (2.2 if text.count("\n") >= 3 else 0)
+        box(
+            ax, x, y - height, box_w, height, text,
+            face_end if i == len(steps) - 1 else face, edge,
+            size=7.0, weight="bold" if i in (0, len(steps) - 1) else "regular",
+        )
+        bottoms.append(y - height)
+        if excl:
+            mid_y = y - height / 2
+            box(
+                ax, x + box_w + 1.6, mid_y - side_h / 2, side_w, side_h, excl,
+                "#f7f7f7", "#8a8a8a", size=6.4, weight="regular", color="#333333",
+            )
+            ax.annotate(
+                "",
+                xy=(x + box_w + 1.6, mid_y),
+                xytext=(x + box_w, mid_y),
+                arrowprops=dict(arrowstyle="-|>", color="#666666", lw=0.6),
+            )
+        y -= height + gap
+    for i in range(len(steps) - 1):
+        ax.annotate(
+            "",
+            xy=(x + box_w / 2, bottoms[i] - gap + 0.15),
+            xytext=(x + box_w / 2, bottoms[i] - 0.15),
+            arrowprops=dict(arrowstyle="-|>", color="#444444", lw=0.7),
+        )
+
+
 def draw_flow(ax, show_letter=False):
     ax.set_xlim(0, 100)
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 200)
     ax.axis("off")
     if show_letter:
         panel_letter(ax, "A", x=-0.01, y=1.02)
-    specs = [
-        ("MIMIC-IV", 2.0, NAVY, "#e8f0f8", "#d9e6f2", [
-            ("Adults, first ICU stay\nn = 85,242", None),
-            ("Sodium measured, 0–24 h\nn = 82,588", "No sodium, 0–24 h\nn = 2,654"),
-            ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 59,008", "Sodium <135 or >145\nn = 23,580"),
-            ("Analysis cohort\nn = 53,712\nSodium ≥146 mmol/L\nn = 3,371 (6.3%)", "No sodium, 24–72 h\nn = 5,296"),
-        ]),
-        ("eICU-CRD", 52.0, AMBER, "#f8efe4", "#f3e0cc", [
-            ("Adults, first ICU stay\nn = 157,883", None),
-            ("Sodium measured, 0–24 h\nn = 136,582", "No sodium, 0–24 h\nn = 21,301"),
-            ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 99,571", "Sodium <135 or >145\nn = 37,011"),
-            ("Analysis cohort\nn = 73,308\nSodium ≥146 mmol/L\nn = 4,908 (6.7%)", "No sodium, 24–72 h\nn = 26,263"),
-        ]),
+    mimic = [
+        ("Adults, first ICU stay\nn = 85,242", None),
+        ("Sodium measured, 0–24 h\nn = 82,588", "No sodium, 0–24 h\nn = 2,654"),
+        ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 59,008", "Sodium <135 or >145\nn = 23,580"),
+        ("Analysis cohort\nn = 53,712\nSodium ≥146 mmol/L\nn = 3,371 (6.3%)", "No sodium, 24–72 h\nn = 5,296"),
     ]
-    box_w, box_h, gap = 30.0, 18.0, 4.2
-    side_w, side_h = 16.2, 11.4
-    for title, x, edge, face, face_end, steps in specs:
-        ax.text(x + box_w / 2, 98.2, title, ha="center", va="top", fontsize=9, fontweight="bold", color="#1a1a1a")
-        y = 93.5
-        bottoms = []
-        for i, (text, excl) in enumerate(steps):
-            height = box_h + (2.4 if text.count("\n") >= 3 else 0)
-            box(
-                ax, x, y - height, box_w, height, text,
-                face_end if i == len(steps) - 1 else face, edge,
-                size=7.4, weight="bold" if i in (0, len(steps) - 1) else "regular",
-            )
-            bottoms.append(y - height)
-            if excl:
-                mid_y = y - height / 2
-                box(
-                    ax, x + box_w + 1.6, mid_y - side_h / 2, side_w, side_h, excl,
-                    "#f7f7f7", "#8a8a8a", size=6.6, weight="regular", color="#333333",
-                )
-                ax.annotate(
-                    "",
-                    xy=(x + box_w + 1.6, mid_y),
-                    xytext=(x + box_w, mid_y),
-                    arrowprops=dict(arrowstyle="-|>", color="#666666", lw=0.6),
-                )
-            y -= height + gap
-        for i in range(len(steps) - 1):
-            ax.annotate(
-                "",
-                xy=(x + box_w / 2, bottoms[i] - gap + 0.15),
-                xytext=(x + box_w / 2, bottoms[i] - 0.15),
-                arrowprops=dict(arrowstyle="-|>", color="#444444", lw=0.7),
-            )
+    eicu = [
+        ("Adults, first ICU stay\nn = 157,883", None),
+        ("Sodium measured, 0–24 h\nn = 136,582", "No sodium, 0–24 h\nn = 21,301"),
+        ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 99,571", "Sodium <135 or >145\nn = 37,011"),
+        ("Analysis cohort\nn = 73,308\nSodium ≥146 mmol/L\nn = 4,908 (6.7%)", "No sodium, 24–72 h\nn = 26,263"),
+    ]
+    sic = [
+        ("Adults, first ICU stay\nn = 21,442", None),
+        ("Sodium measured, 0–24 h\nn = 18,296", "No sodium, 0–24 h\nn = 3,146"),
+        ("All sodium values\n135–145 mmol/L\nduring 0–24 h\nn = 15,128", "Sodium <135 or >145\nn = 3,168"),
+        ("Analysis cohort\nn = 8,534\nSodium ≥146 mmol/L\nn = 511 (6.0%)", "No sodium, 24–72 h\nn = 6,594"),
+    ]
+    draw_one_cohort(ax, "MIMIC-IV", 2.0, 193.5, NAVY, "#e8f0f8", "#d9e6f2", mimic)
+    draw_one_cohort(ax, "eICU-CRD", 52.0, 193.5, AMBER, "#f8efe4", "#f3e0cc", eicu)
+    draw_one_cohort(ax, "SICdb", 27.0, 93.0, TEAL, "#e7f3f0", "#d3ebe6", sic)
 
 
-def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s):
+def draw_roc(ax, y_m, p_m, y_e, p_e, y_s, p_s, y_sic=None, p_sic_x=None, p_sic_s=None):
     series = [
-        (y_m, p_m, NAVY, "XGBoost, MIMIC-IV  0.824"),
-        (y_e, p_e, AMBER, "XGBoost, eICU-CRD  0.807"),
-        (y_s, p_s, GRAY, "Two-sodium logistic, eICU-CRD  0.790"),
+        (y_m, p_m, NAVY, "-", "XGBoost, MIMIC-IV  0.824"),
+        (y_e, p_e, AMBER, "-", "XGBoost, eICU-CRD  0.807"),
+        (y_s, p_s, GRAY, "-", "Two-sodium, eICU-CRD  0.790"),
     ]
-    for y, p, color, label in series:
+    if y_sic is not None:
+        series.extend([
+            (y_sic, p_sic_x, TEAL, "-", "XGBoost, SICdb  0.770"),
+            (y_sic, p_sic_s, TEAL, "--", "Two-sodium, SICdb  0.776"),
+        ])
+    for y, p, color, ls, label in series:
         fpr, tpr, _ = roc_curve(y, p)
-        ax.plot(fpr, tpr, color=color, lw=1.3, label=label)
+        ax.plot(fpr, tpr, color=color, lw=1.3, ls=ls, label=label)
     ax.plot([0, 1], [0, 1], color="#b0b0b0", lw=0.6, ls="--")
     ax.set_xlabel("False positive rate")
     ax.set_ylabel("True positive rate")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1.02)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), frameon=False, fontsize=6.5, handlelength=1.2, ncol=1)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.28), frameon=False, fontsize=5.8, handlelength=1.4, ncol=1)
     panel_letter(ax, "A")
 
 
-def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
+def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None, y_sic=None, p_sic_x=None, p_sic_s=None):
     series = [
-        (y_m, p_m, NAVY, "XGBoost, MIMIC-IV"),
-        (y_e, p_e, AMBER, "XGBoost, eICU-CRD"),
+        (y_m, p_m, NAVY, "-", "XGBoost, MIMIC-IV"),
+        (y_e, p_e, AMBER, "-", "XGBoost, eICU-CRD"),
     ]
     if p_sodium is not None:
-        series.append((y_e, p_sodium, GRAY, "Two-sodium logistic, eICU-CRD"))
-    for y, p, color, label in series:
+        series.append((y_e, p_sodium, GRAY, "-", "Two-sodium, eICU-CRD"))
+    if y_sic is not None:
+        series.append((y_sic, p_sic_x, TEAL, "-", "XGBoost, SICdb"))
+        series.append((y_sic, p_sic_s, TEAL, "--", "Two-sodium, SICdb"))
+    for y, p, color, ls, label in series:
         order = np.argsort(p)
         y, p = y[order], p[order]
         bins = np.array_split(np.arange(len(p)), 10)
@@ -209,15 +227,15 @@ def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
                 continue
             mx.append(p[b].mean())
             my.append(y[b].mean())
-        ax.plot(mx, my, marker="o", ms=3.5, color=color, lw=1.2, label=label)
+        ax.plot(mx, my, marker="o", ms=3.2, color=color, lw=1.15, ls=ls, label=label)
     ax.plot([0, 0.35], [0, 0.35], color="#b0b0b0", lw=0.6, ls="--")
     ax.set_xlim(0, 0.35)
     ax.set_ylim(0, 0.35)
     ax.set_xlabel("Predicted probability")
     ax.set_ylabel("Observed frequency")
     ax.legend(
-        loc="upper center", bbox_to_anchor=(0.55, -0.22),
-        frameon=False, handlelength=1.2, fontsize=6.5, borderaxespad=0,
+        loc="upper center", bbox_to_anchor=(0.5, -0.24),
+        frameon=False, handlelength=1.4, fontsize=5.8, borderaxespad=0,
     )
     panel_letter(ax, "B")
 
@@ -225,15 +243,22 @@ def draw_calibration(ax, y_m, p_m, y_e, p_e, p_sodium=None):
 def draw_risk(ax):
     groups = ["Low", "Intermediate", "High"]
     # Two-sodium tertiles 0.0184 and 0.0529. Development bars are out-of-fold.
-    mimic = [1.4, 3.2, 14.3]
-    eicu = [1.4, 3.9, 14.5]
+    series = [
+        ("MIMIC-IV", [1.4, 3.2, 14.3], NAVY, -0.26),
+        ("eICU-CRD", [1.4, 3.9, 14.5], AMBER, 0.0),
+        ("SICdb", [1.3, 2.9, 11.7], TEAL, 0.26),
+    ]
     x = np.arange(len(groups))
-    width = 0.28
-    ax.bar(x - 0.16, mimic, width, color=NAVY, label="MIMIC-IV")
-    ax.bar(x + 0.16, eicu, width, color=AMBER, label="eICU-CRD")
-    for i, (a, b) in enumerate(zip(mimic, eicu)):
-        ax.text(i - 0.16, a + 0.25, f"{a:.1f}", ha="right", va="bottom", fontsize=7, color=NAVY)
-        ax.text(i + 0.16, b + 0.25, f"{b:.1f}", ha="left", va="bottom", fontsize=7, color=AMBER)
+    width = 0.24
+    for label, vals, color, shift in series:
+        ax.bar(x + shift, vals, width, color=color, label=label)
+        for i, val in enumerate(vals):
+            if val < 8:
+                ax.text(i + shift, val + 0.3, f"{val:.1f}", ha="center", va="bottom", fontsize=6, color=color)
+    # The two tallest high-group labels sit above the bars so they do not collide.
+    ax.text(2 - 0.26, 15.15, "14.3", ha="center", va="bottom", fontsize=6, color=NAVY)
+    ax.text(2, 16.35, "14.5", ha="center", va="bottom", fontsize=6, color=AMBER)
+    ax.text(2 + 0.26, 12.05, "11.7", ha="center", va="bottom", fontsize=6, color=TEAL)
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
     ax.set_ylabel("Observed risk of sodium ≥146 mmol/L, %")
@@ -256,17 +281,17 @@ def save_rgb(fig, stem):
 
 
 def save_flow():
-    fig, ax = plt.subplots(figsize=(7.6, 5.2))
+    fig, ax = plt.subplots(figsize=(7.6, 9.6))
     draw_flow(ax, show_letter=False)
     save_rgb(fig, "figure1_flow")
 
 
-def figure1(y_m, p_m, y_e, p_e, p_s):
+def figure1(y_m, p_m, y_e, p_e, p_s, y_sic=None, p_sic_x=None, p_sic_s=None):
     save_flow()
-    fig, axes = plt.subplots(1, 3, figsize=(7.8, 3.8))
-    fig.subplots_adjust(wspace=0.55, bottom=0.28, right=0.98)
-    draw_roc(axes[0], y_m, p_m, y_e, p_e, y_e, p_s)
-    draw_calibration(axes[1], y_m, p_m, y_e, p_e, p_s)
+    fig, axes = plt.subplots(1, 3, figsize=(7.8, 4.6))
+    fig.subplots_adjust(wspace=0.55, bottom=0.38, right=0.98)
+    draw_roc(axes[0], y_m, p_m, y_e, p_e, y_e, p_s, y_sic, p_sic_x, p_sic_s)
+    draw_calibration(axes[1], y_m, p_m, y_e, p_e, p_s, y_sic, p_sic_x, p_sic_s)
     draw_risk(axes[2])
     save_rgb(fig, "figure2_performance")
 

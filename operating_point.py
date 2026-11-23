@@ -27,6 +27,7 @@ FEATURES = [
 NAVY = "#1f4e79"
 AMBER = "#b86e2a"
 GRAY = "#5c6370"
+TEAL = "#1f7a6d"
 
 mpl.rcParams.update({
     "font.family": "sans-serif",
@@ -205,54 +206,71 @@ def panel_letter(ax, letter, x=-0.12, y=1.06):
     ax.text(x, y, letter, transform=ax.transAxes, fontsize=9, fontweight="bold", va="bottom", ha="left", clip_on=False)
 
 
-def figure3(y_m, p_m, y_e, p_e, threshold):
+def figure3(y_m, p_m, y_e, p_e, threshold, y_s=None, p_s=None):
     grid = np.linspace(0.02, 0.40, 80)
-    fig = plt.figure(figsize=(7.4, 6.4))
-    gs = fig.add_gridspec(2, 2, hspace=0.42, wspace=0.38)
+    fig = plt.figure(figsize=(7.6, 6.8))
+    gs = fig.add_gridspec(2, 2, hspace=0.48, wspace=0.36)
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[0, 1])
     ax3 = fig.add_subplot(gs[1, 0])
     ax4 = fig.add_subplot(gs[1, 1])
 
-    for ax, y, p, title in (
-        (ax1, y_m, p_m, "Development, cross-validation"),
-        (ax2, y_e, p_e, "External validation"),
-    ):
-        sens, spec = sens_spec_curve(y, p, grid)
-        ax.plot(grid, sens, color=NAVY, lw=1.3, label="Sensitivity")
-        ax.plot(grid, spec, color=AMBER, lw=1.3, label="Specificity")
-        ax.axvline(threshold, color=GRAY, lw=0.7, ls="--", label=f"Locked threshold {threshold:.3f}")
-        ax.set_xlim(0.02, 0.40)
-        ax.set_ylim(0, 1)
-        ax.set_xlabel("Predicted-probability threshold")
-        ax.set_ylabel("Rate")
-        ax.set_title(title, fontsize=8)
-        ax.legend(loc="center right", fontsize=6.5)
+    sens, spec = sens_spec_curve(y_m, p_m, grid)
+    ax1.plot(grid, sens, color=NAVY, lw=1.3, label="Sensitivity")
+    ax1.plot(grid, spec, color=AMBER, lw=1.3, label="Specificity")
+    ax1.axvline(threshold, color=GRAY, lw=0.7, ls="--", label=f"Locked threshold {threshold:.3f}")
+    ax1.set_xlim(0.02, 0.40)
+    ax1.set_ylim(0, 1)
+    ax1.set_xlabel("Predicted-probability threshold")
+    ax1.set_ylabel("Rate")
+    ax1.set_title("Development, cross-validation", fontsize=8)
+    ax1.legend(loc="center right", fontsize=6.5)
     panel_letter(ax1, "A")
+
+    e_sens, e_spec = sens_spec_curve(y_e, p_e, grid)
+    ax2.plot(grid, e_sens, color=AMBER, lw=1.3, label="Sensitivity, eICU-CRD")
+    ax2.plot(grid, e_spec, color=AMBER, lw=1.1, ls="--", label="Specificity, eICU-CRD")
+    if y_s is not None:
+        s_sens, s_spec = sens_spec_curve(y_s, p_s, grid)
+        ax2.plot(grid, s_sens, color=TEAL, lw=1.3, label="Sensitivity, SICdb")
+        ax2.plot(grid, s_spec, color=TEAL, lw=1.1, ls="--", label="Specificity, SICdb")
+    ax2.axvline(threshold, color=GRAY, lw=0.7, ls=":")
+    ax2.set_xlim(0.02, 0.40)
+    ax2.set_ylim(0, 1)
+    ax2.set_xlabel("Predicted-probability threshold")
+    ax2.set_ylabel("Rate")
+    ax2.set_title("External validation", fontsize=8)
+    ax2.legend(loc="center right", fontsize=5.6)
     panel_letter(ax2, "B")
 
     metrics = ["Sensitivity", "Specificity", "PPV", "NPV"]
     keys = ["sensitivity", "specificity", "ppv", "npv"]
-    m_op = classify(y_m, p_m, threshold)
-    e_op = classify(y_e, p_e, threshold)
+    cohorts = [("MIMIC-IV", y_m, p_m, NAVY), ("eICU-CRD", y_e, p_e, AMBER)]
+    if y_s is not None:
+        cohorts.append(("SICdb", y_s, p_s, TEAL))
     x = np.arange(len(metrics))
-    w = 0.36
-    ax3.bar(x - w / 2, [m_op[k] for k in keys], w, color=NAVY, label="MIMIC-IV")
-    ax3.bar(x + w / 2, [e_op[k] for k in keys], w, color=AMBER, label="eICU-CRD")
+    w = 0.24 if y_s is not None else 0.36
+    offsets = [-w, 0, w] if y_s is not None else [-w / 2, w / 2]
+    for (name, y, p, color), shift in zip(cohorts, offsets):
+        op = classify(y, p, threshold)
+        ax3.bar(x + shift, [op[k] for k in keys], w, color=color, label=name)
     ax3.set_xticks(x)
     ax3.set_xticklabels(metrics)
-    ax3.set_ylim(0, 1.08)
+    ax3.set_ylim(0, 1.18)
     ax3.set_ylabel("Proportion")
-    ax3.legend(loc="upper center", bbox_to_anchor=(0.38, 0.98), frameon=False, fontsize=7)
+    ax3.legend(loc="upper center", bbox_to_anchor=(0.5, 1.02), frameon=False, fontsize=6.5, ncol=3)
     panel_letter(ax3, "C")
 
     bins = np.linspace(0, 0.6, 31)
-    ax4.hist(p_e[y_e == 0], bins=bins, density=True, histtype="step", lw=1.2, color=GRAY, label="No event")
-    ax4.hist(p_e[y_e == 1], bins=bins, density=True, histtype="step", lw=1.2, color=NAVY, label="Sodium ≥146")
+    ax4.hist(p_e[y_e == 1], bins=bins, density=True, histtype="step", lw=1.2, color=AMBER, label="eICU-CRD, sodium ≥146")
+    ax4.hist(p_e[y_e == 0], bins=bins, density=True, histtype="step", lw=0.9, color="#d7b48a", label="eICU-CRD, no event")
+    if y_s is not None:
+        ax4.hist(p_s[y_s == 1], bins=bins, density=True, histtype="step", lw=1.2, color=TEAL, label="SICdb, sodium ≥146")
+        ax4.hist(p_s[y_s == 0], bins=bins, density=True, histtype="step", lw=0.9, color="#8fbfb6", label="SICdb, no event")
     ax4.axvline(threshold, color=GRAY, lw=0.8, ls="--")
-    ax4.set_xlabel("Predicted probability, eICU-CRD")
+    ax4.set_xlabel("Predicted probability")
     ax4.set_ylabel("Density")
-    ax4.legend(loc="upper right")
+    ax4.legend(loc="upper right", fontsize=5.6)
     panel_letter(ax4, "D")
 
     png = OUT / "figure3_abcd.png"

@@ -1,7 +1,7 @@
-"""Redraw Figure 1 with the two-sodium calibration curve and risk groups.
+"""Redraw the cohort flow, performance figure, operating point, and XGBoost groups.
 
-XGBoost external predictions are the saved deterministic scores. Development
-XGBoost curves use one-thread out-of-fold predictions. Figure 3 is left unchanged.
+External XGBoost scores are one full development fit with n_jobs=-1, the same
+fit that reproduces the eICU-CRD operating point. SICdb uses that locked fit.
 """
 import os
 
@@ -27,22 +27,25 @@ def xgb_one_thread():
     return model
 
 
-def save_xgb_groups():
-    fig, ax = plt.subplots(figsize=(3.5, 3.2))
+def save_xgb_groups(sic=None):
+    fig, ax = plt.subplots(figsize=(3.8, 3.2))
     groups = ["Low", "Intermediate", "High"]
-    mimic = [0.0090, 0.0311, 0.1482]
-    eicu = [0.0118, 0.0316, 0.1525]
+    series = [
+        ("MIMIC-IV", [0.0090, 0.0311, 0.1482], NAVY, -0.26),
+        ("eICU-CRD", [0.0118, 0.0316, 0.1525], AMBER, 0.0),
+    ]
+    if sic is not None:
+        series.append(("SICdb", sic, "#1f7a6d", 0.26))
     x = np.arange(3)
-    w = 0.36
-    ax.bar(x - w / 2, mimic, w, color=NAVY, label="MIMIC-IV")
-    ax.bar(x + w / 2, eicu, w, color=AMBER, label="eICU-CRD")
-    for i, (a, b) in enumerate(zip(mimic, eicu)):
-        ax.text(i - w / 2, a + 0.006, f"{100 * a:.1f}%", ha="center", va="bottom", fontsize=6, color=NAVY)
-        ax.text(i + w / 2, b + 0.006, f"{100 * b:.1f}%", ha="center", va="bottom", fontsize=6, color=AMBER)
+    w = 0.24
+    for label, vals, color, shift in series:
+        ax.bar(x + shift, vals, w, color=color, label=label)
+        for i, val in enumerate(vals):
+            ax.text(i + shift, val + 0.006, f"{100 * val:.1f}", ha="center", va="bottom", fontsize=6, color=color)
     ax.set_xticks(x)
     ax.set_xticklabels(groups)
     ax.set_ylabel("Observed sodium ≥146")
-    ax.set_ylim(0, 0.22)
+    ax.set_ylim(0, 0.24)
     ax.set_title("XGBoost", fontsize=8)
     ax.legend(loc="upper left")
     png = OUT / "supplementary_figure_s2_xgb_groups.png"
@@ -54,19 +57,22 @@ def save_xgb_groups():
     print("wrote", tiff)
 
 
+def group_rates(y, p, cuts=(0.016274014487862587, 0.049104767541090645)):
+    bands = [p <= cuts[0], (p > cuts[0]) & (p <= cuts[1]), p > cuts[1]]
+    return [float(y[m].mean()) if m.any() else float("nan") for m in bands]
+
+
 def main():
-    save_xgb_groups()
     print("loading", flush=True)
     mimic, eicu = load()
     y_m = mimic.y.to_numpy().astype(int)
     y_e = eicu.y.to_numpy().astype(int)
+    from operating_point import classify, figure3, oof_predict as oof_locked, xgb as xgb_locked, youden_threshold
     print("xgb oof", flush=True)
-    p_m = oof_predict(xgb_one_thread(), mimic[mf.FEATURES], y_m)
-    saved = pd.read_csv(OUT / "saved_models" / "eicu_predictions_deterministic_xgb.csv")
-    merged = eicu[["stay_id"]].merge(saved, on="stay_id", how="left")
-    if merged.p_deterministic_xgb.isna().any():
-        raise SystemExit("missing saved external predictions")
-    p_e = merged.p_deterministic_xgb.to_numpy()
+    p_m = oof_locked(xgb_locked(), mimic[mf.FEATURES], y_m)
+    locked = xgb_locked()
+    locked.fit(mimic[mf.FEATURES], y_m)
+    p_e = locked.predict_proba(eicu[mf.FEATURES])[:, 1]
     last_m = mf.read_sql(
         "mimiciv31",
         """
@@ -97,9 +103,20 @@ def main():
         round(roc_auc_score(y_e, p_s), 3),
         flush=True,
     )
-    figure1(y_m, p_m, y_e, p_e, p_s)
-    from operating_point import figure3
-    figure3(y_m, p_m, y_e, p_e, 0.069)
+    sic = pd.read_csv(OUT / "sicdb_cohort.csv")
+    sic = sic[sic.eligible == 1].copy()
+    y_sic = sic.y.to_numpy().astype(int)
+    p_sic_x = locked.predict_proba(sic[mf.FEATURES])[:, 1]
+    p_sic_s = both.predict_proba(sic[["sodium_max", "sodium_last"]])[:, 1]
+    print("sicdb auc", round(roc_auc_score(y_sic, p_sic_x), 3), round(roc_auc_score(y_sic, p_sic_s), 3), flush=True)
+    print("sicdb xgb groups", [round(v, 4) for v in group_rates(y_sic, p_sic_x)], flush=True)
+    save_xgb_groups(group_rates(y_sic, p_sic_x))
+    figure1(y_m, p_m, y_e, p_e, p_s, y_sic, p_sic_x, p_sic_s)
+    thr = youden_threshold(y_m, p_m)
+    print("youden", thr, flush=True)
+    print("eicu operating", classify(y_e, p_e, thr)["tp"], classify(y_e, p_e, thr)["tn"], flush=True)
+    print("sicdb operating", classify(y_sic, p_sic_x, thr)["tp"], classify(y_sic, p_sic_x, thr)["tn"], flush=True)
+    figure3(y_m, p_m, y_e, p_e, thr, y_sic, p_sic_x)
     print("saved figures", flush=True)
 
 
